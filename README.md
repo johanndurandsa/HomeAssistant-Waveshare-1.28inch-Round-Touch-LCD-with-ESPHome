@@ -34,10 +34,6 @@ Everything runs **locally**, no cloud required.
 
 ![Image](https://www.waveshare.com/img/devkit/ESP32-S3-Touch-LCD-1.28-B/ESP32-S3-Touch-LCD-1.28-B-details-inter.jpg)
 
-![Image](https://www.waveshare.com/img/devkit/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-details-size-3.jpg)
-
-![Image](https://i0.wp.com/dronebotworkshop.com/wp-content/uploads/2022/06/GC9A01-ESP32-Hookup.jpg?resize=750%2C422\&ssl=1)
-
 | Component      | Description                       |
 | -------------- | --------------------------------- |
 | **Board**      | Waveshare ESP32-S3 Touch LCD 1.28 |
