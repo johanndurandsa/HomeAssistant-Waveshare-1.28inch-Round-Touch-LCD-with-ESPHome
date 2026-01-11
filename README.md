@@ -36,7 +36,9 @@ A sleek, touch-driven UI for the Waveshare 1.28" Round LCD. Powered by ESPHome, 
    a. wifi_ssid: "Your WiFi Name"
    b. wifi_password: "Your WiFi Password"
    c. ha_api_key: "Your HA Encryption Key"
-3. Compile and Flash
+3. Copy the round-touch-satellite.yaml into your ESPHome
+4. Update your ESPHome yaml to your configuration
+5. Compile and Flash
 
 ## 📂 File Structure
 To compile successfully, organize your ESPHome folder as follows:
