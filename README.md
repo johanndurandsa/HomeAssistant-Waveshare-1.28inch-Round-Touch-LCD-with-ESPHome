@@ -1,8 +1,8 @@
 # ESP32-S3 Touch LCD Dashboard for Home Assistant
 
 
-![Image1](https://github.com/user-attachments/assets/2d476706-6556-40df-926a-cb86238b541b)
-<img src="(https://github.com/user-attachments/assets/2d476706-6556-40df-926a-cb86238b541b)" style="width:50%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/2d476706-6556-40df-926a-cb86238b541b" width="400">
+
 
 A **fully-featured round touchscreen dashboard** built with **ESPHome + Home Assistant**, designed specifically for the
 **Waveshare ESP32-S3 Touch LCD 1.28" (GC9A01)**.
