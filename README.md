@@ -111,6 +111,8 @@ Everything runs **locally**, no cloud required.
 
 ### **Mode 0 – Analog Watch Face**
 
+<img src="https://github.com/user-attachments/assets/706846de-8700-4796-9672-b4fca7b9192f" width="200">
+
 * Day/night color themes
 * Ticking second hand
 * Drop shadows
@@ -120,6 +122,8 @@ Everything runs **locally**, no cloud required.
 ---
 
 ### **Mode 1 – Digital Dashboard**
+
+<img src="https://github.com/user-attachments/assets/9bcf9da5-2c23-43bc-88d4-a20a44912a65" width="200">
 
 * Large digital clock
 * Animated progress ring (seconds)
