@@ -31,8 +31,12 @@ A sleek, touch-driven UI for the Waveshare 1.28" Round LCD. Powered by ESPHome, 
 * **MCU:** ESP32-S3
 
 ## 🛠 How To Use
-* 1. Prepare your Assets
-** Place the required fonts and images in your local ESPHome directory. Your folder structure should look like this:
+1. Prepare your Assets - Place the required fonts and images in your local ESPHome directory.
+2. Configure Secrets - Ensure your secrets.yaml file includes the following keys:
+   a. wifi_ssid: "Your WiFi Name"
+   b. wifi_password: "Your WiFi Password"
+   c. ha_api_key: "Your HA Encryption Key"
+3. Compile and Flash
 
 ## 📂 File Structure
 To compile successfully, organize your ESPHome folder as follows:
