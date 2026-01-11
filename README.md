@@ -9,10 +9,12 @@ A sophisticated, touch-driven ESPHome interface for the Waveshare 1.28" Round LC
 You're sections headers will be used to reference location of destination.
 
 * Description
+* Screen Hardware
 * How To Use
 * References
 * License
 * Author Info
+* File Structure
 
 ## ✨ Description
 A sleek, touch-driven UI for the Waveshare 1.28" Round LCD. Powered by ESPHome, it features an analog clock, digital dashboard, and 4-way smart home control grid. Includes a "Living Eyes" screensaver to prevent burn-in and uses C++ lambdas for precise touch detection. Perfect as a bedside or desk controller for Home Assistant.
@@ -22,11 +24,15 @@ A sleek, touch-driven UI for the Waveshare 1.28" Round LCD. Powered by ESPHome, 
 * **Single-Target Mode:** Large, touch-friendly button for primary lighting control.
 * **Animated Screensaver:** "Living Eyes" animation triggers after 60s of inactivity to prevent screen burn-in.
 
-## 🛠 Hardware
+## 🛠 Screen Hardware
 * **Device:** [Waveshare ESP32-S3-Touch-LCD-1.28](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28)
 * **Display Driver:** GC9A01A (240x240 Round IPS)
 * **Touch Controller:** CST816S
 * **MCU:** ESP32-S3
+
+## 🛠 How To Use
+* 1. Prepare your Assets
+** Place the required fonts and images in your local ESPHome directory. Your folder structure should look like this:
 
 ## 📂 File Structure
 To compile successfully, organize your ESPHome folder as follows:
