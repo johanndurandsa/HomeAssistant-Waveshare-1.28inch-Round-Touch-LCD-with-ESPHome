@@ -1,7 +1,7 @@
 # ESP32-S3 Touch LCD Dashboard for Home Assistant
 
 
-<img src="https://github.com/user-attachments/assets/2d476706-6556-40df-926a-cb86238b541b" width="400">
+<img src="https://github.com/user-attachments/assets/2d476706-6556-40df-926a-cb86238b541b" width="200">
 
 
 A **fully-featured round touchscreen dashboard** built with **ESPHome + Home Assistant**, designed specifically for the
