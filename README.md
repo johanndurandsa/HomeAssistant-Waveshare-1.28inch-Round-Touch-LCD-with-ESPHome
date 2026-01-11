@@ -107,14 +107,6 @@ Everything runs **locally**, no cloud required.
 
 ## 🎨 UI Display Modes
 
-![Image](https://www.makerguides.com/wp-content/uploads/2025/01/image.png)
-
-![Image](https://community-assets.home-assistant.io/original/4X/c/8/9/c894f2ff8ead33615b627db931503cad8f19f5b4.jpeg)
-
-![Image](https://joshdmoore.com/content/images/2023/12/IMG_3153.jpeg)
-
-![Image](https://www.jeffgeerling.com/blog/2024/home-assistant-and-carplay-pi-touch-display-2/pi-touch-display-2-home-assistant-dashboard.jpeg)
-
 ### **Mode 0 – Analog Watch Face**
 
 * Day/night color themes
