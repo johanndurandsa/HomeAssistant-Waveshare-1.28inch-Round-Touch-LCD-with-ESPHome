@@ -8,13 +8,14 @@ A sophisticated, touch-driven ESPHome interface for the Waveshare 1.28" Round LC
 ## Table of Contents
 You're sections headers will be used to reference location of destination.
 
-* **Description
-* **How To Use
-* **References
-* **License
-* **Author Info
+* Description
+* How To Use
+* References
+* License
+* Author Info
 
-## ✨ Features
+## ✨ Description
+A sleek, touch-driven UI for the Waveshare 1.28" Round LCD. Powered by ESPHome, it features an analog clock, digital dashboard, and 4-way smart home control grid. Includes a "Living Eyes" screensaver to prevent burn-in and uses C++ lambdas for precise touch detection. Perfect as a bedside or desk controller for Home Assistant.
 * **Analog Watch Face:** Dynamic background that changes from day (blue) to night (navy).
 * **Digital Dashboard:** Real-time metrics with a bold 4px circular progress ring.
 * **4-Way Control Grid:** Toggle four different devices (Lights, Fans, Kitchen) from a single screen.
