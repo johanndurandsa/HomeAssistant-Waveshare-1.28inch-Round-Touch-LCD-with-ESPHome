@@ -5,7 +5,7 @@ A sophisticated, touch-driven ESPHome interface for the Waveshare 1.28" Round LC
 ![ESP32-S3-Touch-LCD-1 28-details-7](https://github.com/user-attachments/assets/cdde95c0-9d88-4c20-ad48-dbc59492f8b1)
 ![ESP32-S3-Touch-LCD-1 28-details-9](https://github.com/user-attachments/assets/d6ff676e-04bd-4a62-aade-5372d3d04769)
 
-##Table of Contents
+## Table of Contents
 You're sections headers will be used to reference location of destination.
 
 * **Description
