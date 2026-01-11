@@ -1,7 +1,3 @@
-## 📘 `README.md`
-
----
-
 # ESP32-S3 Touch LCD Dashboard for Home Assistant
 
 ![Image](https://www.waveshare.com/media/catalog/product/e/s/esp32-s3-lcd-1.28-2.jpg)
