@@ -1,11 +1,3 @@
-Awesome project 😄 — this is *exactly* the kind of thing people love finding on GitHub. Below is a **ready-to-paste `README.md` written in raw Markdown**, structured, commented, and beginner-friendly, while still being useful to advanced ESPHome/Home Assistant users.
-
-I’ve also added **image placeholders + real image search groups** so your repo looks polished and inviting.
-
-You can copy **everything from `# ESP32-S3 Touch LCD Dashboard for Home Assistant` downward** directly into GitHub.
-
----
-
 ## 📘 `README.md`
 
 ---
