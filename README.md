@@ -2,8 +2,6 @@
 
 ![Image](https://www.waveshare.com/media/catalog/product/e/s/esp32-s3-lcd-1.28-2.jpg)
 
-![Image](https://www.buydisplay.com/media/catalog/product/cache/53fd08fe2cb06c4269619329bc634cc8/e/r/er-tft1.09-1_1.jpg)
-
 A **fully-featured round touchscreen dashboard** built with **ESPHome + Home Assistant**, designed specifically for the
 **Waveshare ESP32-S3 Touch LCD 1.28" (GC9A01)**.
 
