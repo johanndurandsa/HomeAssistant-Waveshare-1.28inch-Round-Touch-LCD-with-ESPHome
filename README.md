@@ -1,54 +1,284 @@
-# HomeAssistant-Waveshare-1.28inch-Round-Touch-LCD-with-ESPHome
-# HomeAssistant-Round-Touch-LCD
+Awesome project 😄 — this is *exactly* the kind of thing people love finding on GitHub. Below is a **ready-to-paste `README.md` written in raw Markdown**, structured, commented, and beginner-friendly, while still being useful to advanced ESPHome/Home Assistant users.
 
-A sophisticated, touch-driven ESPHome interface for the Waveshare 1.28" Round LCD (ESP32-S3). This project transforms a compact display into a functional Home Assistant "Satellite" controller with multiple UI modes and an animated screensaver.
-![ESP32-S3-Touch-LCD-1 28-details-7](https://github.com/user-attachments/assets/cdde95c0-9d88-4c20-ad48-dbc59492f8b1)
-![ESP32-S3-Touch-LCD-1 28-details-9](https://github.com/user-attachments/assets/d6ff676e-04bd-4a62-aade-5372d3d04769)
+I’ve also added **image placeholders + real image search groups** so your repo looks polished and inviting.
 
-## Table of Contents
-You're sections headers will be used to reference location of destination.
+You can copy **everything from `# ESP32-S3 Touch LCD Dashboard for Home Assistant` downward** directly into GitHub.
 
-* Description
-* Screen Hardware
-* How To Use
-* References
-* License
-* Author Info
-* File Structure
+---
 
-## ✨ Description
-A sleek, touch-driven UI for the Waveshare 1.28" Round LCD. Powered by ESPHome, it features an analog clock, digital dashboard, and 4-way smart home control grid. Includes a "Living Eyes" screensaver to prevent burn-in and uses C++ lambdas for precise touch detection. Perfect as a bedside or desk controller for Home Assistant.
-* **Analog Watch Face:** Dynamic background that changes from day (blue) to night (navy).
-* **Digital Dashboard:** Real-time metrics with a bold 4px circular progress ring.
-* **4-Way Control Grid:** Toggle four different devices (Lights, Fans, Kitchen) from a single screen.
-* **Single-Target Mode:** Large, touch-friendly button for primary lighting control.
-* **Animated Screensaver:** "Living Eyes" animation triggers after 60s of inactivity to prevent screen burn-in.
+## 📘 `README.md`
 
-## 🛠 Screen Hardware
-* **Device:** [Waveshare ESP32-S3-Touch-LCD-1.28](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28)
-* **Display Driver:** GC9A01A (240x240 Round IPS)
-* **Touch Controller:** CST816S
-* **MCU:** ESP32-S3
+---
 
-## 🛠 How To Use
-1. Prepare your Assets - Place the required fonts and images in your local ESPHome directory.
-2. Configure Secrets - Ensure your secrets.yaml file includes the following keys:
-   a. wifi_ssid: "Your WiFi Name"
-   b. wifi_password: "Your WiFi Password"
-   c. ha_api_key: "Your HA Encryption Key"
-3. Copy the round-touch-satellite.yaml into your ESPHome
-4. Update your ESPHome yaml to your configuration
-5. Compile and Flash
+# ESP32-S3 Touch LCD Dashboard for Home Assistant
 
-## 📂 File Structure
-To compile successfully, organize your ESPHome folder as follows:
+![Image](https://www.waveshare.com/media/catalog/product/e/s/esp32-s3-lcd-1.28-2.jpg)
+
+![Image](https://www.buydisplay.com/media/catalog/product/cache/53fd08fe2cb06c4269619329bc634cc8/e/r/er-tft1.09-1_1.jpg)
+
+![Image](https://m.media-amazon.com/images/I/61xCcUlX35L._AC_UF894%2C1000_QL80_.jpg)
+
+![Image](https://m.media-amazon.com/images/I/711gESPX5cL._AC_UF894%2C1000_QL80_.jpg)
+
+A **fully-featured round touchscreen dashboard** built with **ESPHome + Home Assistant**, designed specifically for the
+**Waveshare ESP32-S3 Touch LCD 1.28" (GC9A01)**.
+
+This project turns the display into:
+
+* 🕒 Analog & digital clocks
+* 🌡 Indoor / outdoor temperature dashboard
+* 💡 Interactive light & fan control
+* 🟢 4-way touch control grid
+* 😴 Animated screensaver with automatic dimming
+
+Everything runs **locally**, no cloud required.
+
+---
+
+## ✨ Features
+
+* ✅ Native **ESPHome** integration with Home Assistant
+* 🖥 240×240 **round GC9A01 IPS display**
+* 👆 Capacitive **CST816 touch support**
+* ⏱ Home Assistant **time synchronization**
+* 💡 Touch-controlled Home Assistant switches & lights
+* 🌈 Smooth UI animations & custom fonts
+* 😴 Smart **screensaver with brightness dimming**
+* 🔄 OTA updates enabled
+
+---
+
+## 🧰 Hardware Used
+
+![Image](https://www.waveshare.com/img/devkit/ESP32-S3-Touch-LCD-1.28-B/ESP32-S3-Touch-LCD-1.28-B-details-inter.jpg)
+
+![Image](https://www.waveshare.com/img/devkit/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-details-size-3.jpg)
+
+![Image](https://i0.wp.com/dronebotworkshop.com/wp-content/uploads/2022/06/GC9A01-ESP32-Hookup.jpg?resize=750%2C422\&ssl=1)
+
+| Component      | Description                       |
+| -------------- | --------------------------------- |
+| **Board**      | Waveshare ESP32-S3 Touch LCD 1.28 |
+| **MCU**        | ESP32-S3 (Dual-core, PSRAM)       |
+| **Display**    | 1.28" Round IPS LCD               |
+| **Driver**     | GC9A01A (SPI)                     |
+| **Touch**      | CST816 (I²C)                      |
+| **IMU**        | QMI8658 (optional)                |
+| **Resolution** | 240 × 240                         |
+
+### 🔗 Official Links
+
+* Product Page:
+  [https://www.waveshare.com/esp32-s3-touch-lcd-1.28.htm](https://www.waveshare.com/esp32-s3-touch-lcd-1.28.htm)
+* Datasheet / Wiki:
+  [https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28)
+
+---
+
+## 🏗 Software Stack
+
+* **ESPHome**
+* **Home Assistant**
+* **Arduino Framework** (ESP32-S3)
+* **SPI DMA display driver**
+* **I²C touch controller**
+
+> ℹ️ ESP-IDF also works, but Arduino is used here for compatibility and simplicity.
+
+---
+
+## 📦 Folder Structure
+
 ```text
-/esphome/
-├── fonts/
-│   ├── OCRAEXT.ttf
-│   ├── GoogleSansMedium.ttf
-│   └── materialdesignicons-webfont.ttf
+.
+├── esp32-s3-touch.yaml
 ├── images/
 │   └── ha-logo.png
-└── esp32-s3-touch.yaml
+├── fonts/
+│   ├── OCRAEXT.ttf
+│   └── GoogleSansMedium.ttf
+└── secrets.yaml
+```
+
+---
+
+## 🔌 Pin Configuration (Waveshare Default)
+
+### SPI (Display – GC9A01)
+
+| Function  | GPIO   |
+| --------- | ------ |
+| SCLK      | GPIO10 |
+| MOSI      | GPIO11 |
+| MISO      | GPIO12 |
+| CS        | GPIO9  |
+| DC        | GPIO8  |
+| RESET     | GPIO14 |
+| Backlight | GPIO2  |
+
+### I²C (Touch + IMU)
+
+| Function    | GPIO   |
+| ----------- | ------ |
+| SDA         | GPIO6  |
+| SCL         | GPIO7  |
+| Touch INT   | GPIO5  |
+| Touch RESET | GPIO13 |
+
+---
+
+## 🎨 UI Display Modes
+
+![Image](https://www.makerguides.com/wp-content/uploads/2025/01/image.png)
+
+![Image](https://community-assets.home-assistant.io/original/4X/c/8/9/c894f2ff8ead33615b627db931503cad8f19f5b4.jpeg)
+
+![Image](https://joshdmoore.com/content/images/2023/12/IMG_3153.jpeg)
+
+![Image](https://www.jeffgeerling.com/blog/2024/home-assistant-and-carplay-pi-touch-display-2/pi-touch-display-2-home-assistant-dashboard.jpeg)
+
+### **Mode 0 – Analog Watch Face**
+
+* Day/night color themes
+* Ticking second hand
+* Drop shadows
+* Date complication
+* Home Assistant logo overlay
+
+---
+
+### **Mode 1 – Digital Dashboard**
+
+* Large digital clock
+* Animated progress ring (seconds)
+* Indoor & outdoor temperatures
+* Material Design icons
+
+---
+
+### **Mode 2 – Single Light Control**
+
+* Large touch-friendly circular button
+* Live Home Assistant switch state
+* Color-coded ON/OFF background
+
+---
+
+### **Mode 3 – Animated Screensaver**
+
+* Automatic after 60 seconds of inactivity
+* Wandering animated eyes 👀
+* Blink animation
+* Backlight dimmed to 20%
+* Prevents OLED/IPS burn-in
+
+---
+
+### **Mode 4 – 4-Way Control Grid**
+
+| Quadrant     | Entity      |
+| ------------ | ----------- |
+| Top-Left     | Corner Lamp |
+| Top-Right    | Fan         |
+| Bottom-Left  | Main Light  |
+| Bottom-Right | Kitchen     |
+
+---
+
+## 👆 Touch Logic Overview
+
+* Tap anywhere → cycles display modes
+* Touch center button → toggles lamp
+* Touch grid quadrant → toggles entity
+* First touch exits screensaver
+* Touch resets idle timer
+
+Touch detection uses:
+
+* **Circular hit testing** (Pythagorean distance)
+* **Quadrant mapping**
+* **State-aware UI refresh**
+
+---
+
+## 🧠 Screensaver Logic
+
+```text
+• Checks inactivity every 1 second
+• After 60 seconds:
+  → Saves current screen
+  → Switches to Mode 3
+  → Dims backlight
+• On touch:
+  → Restores brightness
+  → Returns to previous mode
+```
+
+---
+
+## 🔗 Home Assistant Integration
+
+Entities are linked directly via the ESPHome API:
+
+### Sensors
+
+* Indoor temperature
+* Outdoor temperature
+* Power consumption
+
+### Switches / Lights
+
+* Corner lamp
+* Fan
+* Main light
+* Kitchen switch
+
+Everything updates **live** on the display.
+
+---
+
+## 🚀 Installation Steps
+
+1. Flash ESPHome to the board
+2. Copy `esp32-s3-touch.yaml`
+3. Add Wi-Fi credentials to `secrets.yaml`
+4. Upload fonts & images
+5. Compile & upload
+6. Add device to Home Assistant
+7. Enjoy 😎
+
+---
+
+## ⚠️ Notes & Tips
+
+* Resize images to **≤200×200** to save RAM
+* Use PSRAM (enabled by default)
+* GC9A01 **requires color inversion**
+* OTA enabled – no USB needed after first flash
+
+---
+
+## 🧩 Customization Ideas
+
+* Add weather forecast
+* Add music player controls
+* Add brightness auto-adjust (LDR)
+* Add swipe gestures
+* Add vibration motor feedback
+
+---
+
+## ❤️ Credits & Inspiration
+
+* Waveshare hardware & documentation
+* ESPHome community
+* Home Assistant project
+
+---
+
+## 📜 License
+
+MIT License – free to use, modify, and share.
+
+
 
