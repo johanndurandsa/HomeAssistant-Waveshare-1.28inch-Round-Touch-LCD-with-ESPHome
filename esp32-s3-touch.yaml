@@ -1,0 +1,754 @@
+# =========================================================================
+# SYSTEM SUBSTITUTIONS
+# =========================================================================
+substitutions:
+  name: "esp32-s3-touch"
+  friendly_name: "ESP32-S3-Touch"
+
+esphome:
+  name: "${name}"
+  platformio_options:
+    board_build.arduino.memory_type: qio_qspi
+    board_build.f_cpu: 240000000L
+    board_build.flash_mode: dio
+    board_build.upload.flash_size: 16MB # The board has 16MB Flash
+  on_boot:
+    priority: 600
+    then:
+      - lambda: |-
+          for (int i = 0; i < 50; i++) {
+            id(price_history)[i] = 0.0f;
+          }
+          id(history_index) = 0;
+          ESP_LOGD("boot", "Price history initialized");
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    #type: esp-idf  # esp-idf is recommended for S3 displays
+    type: arduino
+logger:
+  level: DEBUG
+
+# =========================================================================
+# ENABLE HOMEASSISTANT API
+# =========================================================================
+api:
+  encryption:
+    key: "d62+s2gC8XCHIyhBGRStz4KBaVXKBzvtCh1p9svzHeU="
+
+ota:
+  - platform: esphome
+    password: "f9ccae4e817cdef634eb4920bb403f0"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# =========================================================================
+# ENABLE FALLBACK HOTSPOT (CAPTIVE PORTAL) IN CASE WIFI CONNECTION FAILS
+# =========================================================================
+  ap:
+    ssid: "Esp32-S3-Touch Fallback Hotspot"
+    password: "8kklgzNh6C0W"
+
+captive_portal:
+# =========================================================================
+# UI COLOR PALETTE
+# =========================================================================
+color:
+  - id: ha_blue    # Standard Home Assistant background
+    hex: 51c0f2  
+  - id: ha_orange  # Used for fans or warning states
+    hex: FF9800  
+  - id: ha_purple  # Used for lighting groups
+    hex: 9C27B0  
+  - id: ha_red     # Used for heaters or danger states
+    hex: E53935  
+  - id: ha_green   # Global "Active/On" state
+    hex: 4CAF50  
+  - id: ha_yellow  # Used for lamps and warm lights
+    hex: FDD835
+
+# =========================================================================
+# HARDWARE COMMUNICATION (I@C BUS FOR TOUCH AND IMU)
+# =========================================================================
+# I2C Bus Configuration for Waveshare ESP32-S3-Touch-LCD-1.28
+i2c:
+  # SDA (Serial Data) is connected to GPIO6 on the ESP32-S3
+  # This line communicates with the CST816S Touch Controller and QMI8658 IMU
+  sda: GPIO6
+  
+  # SCL (Serial Clock) is connected to GPIO7 on the ESP32-S3
+  # Synchronizes data transfer for the I2C bus
+  scl: GPIO7
+  
+  # Scan for I2C devices on boot (CST816S usually at 0x15, QMI8658 at 0x6B)
+  scan: true
+  
+  # Internal ID used to reference this bus in the 'touchscreen' and 'sensor' blocks
+  id: bus_a
+
+# =========================================================================
+# SPI BUS: DISPLAY COMMUNICATION
+# According to Waveshare LCD-1.28 Datasheet (GC9A01 Driver)
+# =========================================================================
+spi:
+  # SCLK (Serial Clock): Synchronizes data transmission to the display
+  clk_pin: GPIO10
+  
+  # MOSI (Master Out Slave In): Sends pixel data and commands to the LCD
+  mosi_pin: GPIO11
+  
+  # MISO (Master In Slave Out): Standard for SPI, though the GC9A01 
+  # on this board usually operates in 3-wire/4-wire Write Mode.
+  miso_pin: GPIO12
+
+# =========================================================================
+# PHYSICAL OUTPUTS (PWM / LEDC)
+# Based on Waveshare ESP32-S3-Touch-LCD-1.28 Pinout
+# =========================================================================
+output:
+  # LCD BACKLIGHT: Controls the brightness of the GC9A01 panel
+  - platform: ledc
+    pin: GPIO2       # Dedicated Backlight (BL) pin
+    inverted: false  # High signal = Brighter backlight
+    id: backlight_pwm
+
+  # ONBOARD RGB LED: Located on the rear of the module
+  # Note: These are active-low (Common Anode), requiring 'inverted: true'
+  
+  - platform: ledc
+    pin: GPIO4       # Red Component
+    id: led_red
+    inverted: true
+    
+  - platform: ledc
+    pin: GPIO16      # Green Component
+    id: led_green
+    inverted: true
+    
+  - platform: ledc
+    pin: GPIO17      # Blue Component
+    id: led_blue
+    inverted: true
+
+# =========================================================================
+# LIGHT COMPONENTS: UI & HARDWARE FEEDBACK
+# Maps LEDC outputs to Home Assistant Light entities
+# =========================================================================
+light:
+  # LCD BACKLIGHT: Manages the screen brightness intensity
+  - platform: monochromatic
+    output: backlight_pwm
+    name: "Display Backlight"
+    id: back_light
+    # Instantly change brightness without fading (saves CPU cycles for display)
+    default_transition_length: 0s
+    # Ensures the screen is visible immediately upon boot/power-up
+    restore_mode: ALWAYS_ON
+
+  # ONBOARD RGB: The status LED on the back of the Waveshare module
+  - platform: rgb
+    name: "Onboard Status LED"
+    id: local_light
+    # Linked to GPIOs 4, 16, and 17 as defined in the 'output' section
+    red: led_red
+    green: led_green
+    blue: led_blue
+    # Keeps the rear LED off by default to save power and prevent distraction
+    restore_mode: ALWAYS_OFF
+
+# =========================================================================
+# TIME COMPONENT: HOME ASSISTANT NETWORK TIME
+# Synchronizes the internal ESP32 clock with the HA Server
+# =========================================================================
+time:
+  # Pulls the time via the Native API connection to Home Assistant
+  - platform: homeassistant
+    id: home_time
+    
+    # Matches the regional time for South Africa
+    # Handles Daylight Saving Time (DST) offsets automatically
+    timezone: Africa/Johannesburg
+    
+    # Callback action triggered once the ESP32 successfully handshakes with HA
+    on_time_sync:
+      then:
+        # Confirms in the ESPHome logs that the time is now accurate
+        # Essential for the 'time_now.is_valid()' check in your display lambda
+        - logger.log: "Time synchronized with Home Assistant"
+
+# =========================================================================
+# TYPOGRAPHY: FONT RENDERING & MEMORY MANAGEMENT
+# These fonts are compiled into the binary and stored in Flash/PSRAM
+# =========================================================================
+font:
+  # Roboto: Standard sans-serif for general UI labels
+  - file: "gfonts://Roboto" 
+    id: my_font
+    size: 20
+
+  # OCRAEXT: A "Tech" style fixed-width font often used for data readouts
+  # Using multiple sizes creates a visual hierarchy on the round 240x240 screen
+  - file: "fonts/OCRAEXT.ttf"
+    id: fontocra
+    size: 42
+  - file: "fonts/OCRAEXT.ttf"
+    id: fontocra_small
+    size: 28
+  - file: "fonts/OCRAEXT.ttf"
+    id: fontocra_smaller
+    size: 18
+
+  # Google Sans: High-readability font for clocks and primary metrics
+  # Larger sizes (58px) are ideal for the center of the circular display
+  - file: "fonts/GoogleSansMedium.ttf"
+    id: googlesans_58
+    size: 58
+  - file: "fonts/GoogleSansMedium.ttf"
+    id: googlesans_48
+    size: 48
+  - file: "fonts/GoogleSansMedium.ttf"
+    id: googlesans_42
+    size: 42
+  - file: "fonts/GoogleSansMedium.ttf"
+    id: googlesans_28
+    size: 28
+  - file: "fonts/GoogleSansMedium.ttf"
+    id: googlesans_18
+    size: 18
+
+# =========================================================================
+# ICONOGRAPHY: MATERIAL DESIGN ICONS (MDI)
+# Vector-based icons mapped to specific Unicode hex points.
+# These allow for sharp, scalable UI elements on the 240x240 display.
+# https://pictogrammers.github.io/@mdi/font/5.3.45/
+# =========================================================================
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: icon_font2
+    size: 42  # Scaled for high visibility on a 1.28" screen
+    glyphs:
+      # Each hex code corresponds to a specific vector shape in the MDI library
+      - "\U000F0599" # mdi-weather-sunny: Used for outdoor temperature/weather
+      - "\U000F0826" # mdi-home-account: Used for indoor/home occupancy stats
+      - "\U000F0335" # mdi-lamp: Generic lighting indicator
+      - "\U000F0EC9" # mdi-mouth: Used for the 'Cute Mouth' in the screensaver
+      - "\U000F095F" # mdi-desk-lamp: Specific icon for the Corner Lamp toggle
+      - "\U000F0210" # mdi-fan: Animated icon for fan control
+      - "\U000F0769" # mdi-ceiling-light: Dedicated icon for kitchen/main lighting
+      - "\U000F0F2E" # mdi-wave: Water/Wave icon for decorative screens
+
+# =========================================================================
+# IMAGE ASSETS: BITMAP DATA MANAGEMENT
+# Images are decompressed and stored in RAM/PSRAM for fast drawing.
+# =========================================================================
+image:
+  # The source file path within your ESPHome configuration folder
+  - file: "images/ha-logo.png"
+    id: ha_logo
+    
+    # RESIZE NOTE: Your physical screen is 240x240. 
+    # 350x350 is larger than the display and will use ~360KB of RAM.
+    # Consider resizing to 120x120 or 200x200 to save memory and improve FPS.
+    resize: 350x350  
+    
+    # TYPE: RGB (24-bit color) provides the best quality for the GC9A01 
+    # 65K color "High Color" (16-bit) mode.
+    type: RGB 
+    
+    # Enables the transparent background of your PNG.
+    # Without this, transparent areas will appear as solid black or white blocks.
+    transparency: alpha_channel
+
+# =========================================================================
+# GLOBAL VARIABLES: MEMORY & STATE MANAGEMENT
+# These variables persist in RAM while the device is powered on.
+# =========================================================================
+globals:
+  # UI STATE: Determines which 'if' block in the display lambda is rendered.
+  - id: display_mode
+    type: int
+    restore_value: no          # Reset to 0 on reboot to ensure a clean UI start
+    initial_value: "0"         # Default: Analog Watch Face
+
+  # DATA ARRAY: Stores 50 points of price data for graphing.
+  # Note: A float[50] array uses 200 bytes of RAM (4 bytes per float).
+  - id: price_history
+    type: float[50]
+    restore_value: no
+
+  # ARRAY POINTER: Tracks the current position in the price_history array.
+  - id: history_index
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+  # IDLE TIMER: Tracks 'millis()' (milliseconds since boot).
+  # Used by the 'interval' block to trigger the screensaver.
+  - id: last_touch_time
+    type: uint32_t
+    restore_value: no
+    initial_value: "0"
+
+  # CONTEXT MEMORY: Remembers which screen the user was looking at.
+  # This allows the 'on_touch' logic to return to the correct page after 
+  # waking up from the animated eyes (Mode 3).
+  - id: pre_screensaver_mode
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+# =========================================================================
+# AUTOMATION: SCREENSAVER WATCHDOG
+# Checks every second if the device has been abandoned by the user.
+# =========================================================================
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          // STEP 1: Check if screensaver (Mode 3) is already active.
+          // This prevents the timer from constantly resetting itself while in Mode 3.
+          if (id(display_mode) != 3) {
+            
+            // STEP 2: Time Comparison
+            // millis() = current uptime, id(last_touch_time) = timestamp of last interaction.
+            // 60000ms = 60 seconds of inactivity.
+            if (millis() - id(last_touch_time) > 60000) {
+              
+              // STEP 3: State Preservation
+              // Store current screen (0, 1, 2, or 4) so we can return to it later.
+              id(pre_screensaver_mode) = id(display_mode); 
+              
+              // STEP 4: Mode Switch
+              // Set global mode to 3 (The 'Animated Eyes' screensaver).
+              id(display_mode) = 3; 
+
+              // Dim backlight to 20% (0.2) when screensaver starts
+              auto call = id(back_light).make_call();
+              call.set_brightness(0.2); 
+              call.perform();
+              
+              // STEP 5: Force Redraw
+              // Immediately push the new 'Eyes' frame to the GC9A01 via SPI.
+              id(my_display).update();
+            }
+          }
+
+# =========================================================================
+# HOME ASSISTANT ENTITY LINKS
+# =========================================================================
+sensor:
+  - platform: homeassistant
+    id: power_consumption
+    entity_id: sensor.lux_home_consumption_live
+    unit_of_measurement: "W"
+  - platform: homeassistant
+    id: lights_off
+    entity_id: sensor.esp32_temprature_outdoor
+    unit_of_measurement: "°C"
+  - platform: homeassistant
+    id: pool_temp
+    entity_id: sensor.esp32_temprature_outdoor
+    unit_of_measurement: "°C"
+  - platform: homeassistant
+    id: inside_temperature
+    entity_id: sensor.esp32_temprature_indoor
+    internal: true
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.esp32_temprature_outdoor
+    internal: true
+  
+
+switch:
+  - platform: homeassistant
+    id: corner_lamp
+    entity_id: switch.sonoff_1001262b7a
+  - platform: homeassistant
+    id: fan
+    entity_id: fan.sonoff_1000e8d6f9
+  - platform: homeassistant
+    id: main_light
+    entity_id: light.sonoff_1000e8d6f9_1
+  - platform: homeassistant
+    id: kitchen
+    entity_id: switch.sonoff_10013e2495_1
+
+# =========================================================================
+# DISPLAY COMPONENT: GC9A01A ROUND LCD
+# Coordinates: Center is (120, 120), Radius is 120px
+# =========================================================================
+display:
+  - platform: ili9xxx
+    model: gc9a01a
+    id: my_display
+    
+    # HARDWARE PINS (Per Waveshare Schematic)
+    reset_pin: GPIO14  # Hardware Reset
+    cs_pin: GPIO9     # Chip Select (Activates SPI communication)
+    dc_pin: GPIO8     # Data/Command (Toggles between pixel data and registers)
+    
+    # SETTINGS
+    rotation: 0        # 0 is standard; 180 flips the screen for cable exit at top
+    invert_colors: true # Required for this specific IPS panel to show correct colors
+    
+    # PERFORMANCE
+    # 33ms provides ~30 FPS (Frames Per Second). 
+    # The ESP32-S3 uses DMA (Direct Memory Access) to push data quickly.
+    update_interval: 33ms
+      #    lambda: |-
+      #      it.fill(Color::BLACK);
+      #      it.print(120, 120, id(fontocra), TextAlign::CENTER, "Hello!");
+      #    lambda: |-
+      #          it.fill(Color::BLACK);
+      #          // Use strftime to format the time
+      #          // %H:%M results in 24-hour format (e.g., 14:30)
+      #          // %I:%M %p results in 12-hour format (e.g., 02:30 PM)
+      #          it.strftime(120, 120, id(fontocra), TextAlign::CENTER, "%H:%M", id(home_time).now());
+      #          // Optional: Add the date below the time
+      #          it.strftime(120, 160, id(fontocra_smaller), TextAlign::CENTER, "%d %b %Y", id(home_time).now());
+    lambda: |-
+      // 1. CLEAR BACKGROUND
+      // it.fill(id(ha_blue)) paints the entire 240x240 frame buffer 
+      // with your Home Assistant blue hex color. Drawing this first
+      // prevents "ghosting" from the previous frame.
+      it.fill(id(ha_blue)); 
+
+      // 2. GET CURRENT TIME
+      // 'auto' creates a 'ESPTime' object. This is synchronized via 
+      // the 'home_time' component you defined earlier.
+      auto time_now = id(home_time).now();
+
+      // -----------------------------------------------------------------
+      // MODE 0: ENHANCED ANALOG WATCH FACE (Standard Ticking)
+      // Features: Standard seconds, Drop Shadows, and Dynamic Colors
+      // -----------------------------------------------------------------
+      if (id(display_mode) == 0) {
+        
+        // 1. DYNAMIC BACKGROUND
+        // Changes background based on time: Bright blue by day, Deep navy by night
+        Color bg_color = (time_now.hour >= 6 && time_now.hour < 18) 
+                         ? Color(0x03, 0xA9, 0xF4)  // Day: HA Blue
+                         : Color(0x01, 0x35, 0x4D); // Night: Deep Navy
+        it.fill(bg_color);
+
+        // 2. LOGO OVERLAY
+        it.image(10, 0, id(ha_logo));
+
+        if (time_now.is_valid()) {
+          const int cx = 120;
+          const int cy = 120;
+          
+          // Define a shadow color (Black with transparency)
+          Color shadow = Color(0, 0, 0, 100);
+
+          // 3. CLOCK FACE TICKS
+          for (int i = 0; i < 12; i++) {
+            float angle = i * 30 * M_PI / 180.0;
+            it.line(cx + cos(angle) * 105 + 1, cy + sin(angle) * 105 + 1,
+                    cx + cos(angle) * 118 + 1, cy + sin(angle) * 118 + 1, shadow);
+            it.line(cx + cos(angle) * 105, cy + sin(angle) * 105,
+                    cx + cos(angle) * 118, cy + sin(angle) * 118, Color::BLACK);
+          }
+
+          // 4. ANGLE CALCULATIONS (Standard Ticking)
+          // Removed the millis() fractional calculation to restore 1-second jumps
+          float s_ang = (time_now.second * 6.0) * M_PI / 180.0 - M_PI / 2.0;
+          float m_ang = (time_now.minute * 6.0 + time_now.second / 10.0) * M_PI / 180.0 - M_PI / 2.0;
+          float h_ang = ((time_now.hour % 12) * 30.0 + time_now.minute * 0.5) * M_PI / 180.0 - M_PI / 2.0;
+
+          // 5. DRAW HOUR HAND
+          for (int off = -1; off <= 1; off++) {
+            it.line(cx + off + 2, cy + off + 2, cx + cos(h_ang) * 60 + off + 2, cy + sin(h_ang) * 60 + off + 2, shadow);
+            it.line(cx + off, cy + off, cx + cos(h_ang) * 60 + off, cy + sin(h_ang) * 60 + off, Color::BLACK);
+          }
+
+          // 6. DRAW MINUTE HAND
+          it.line(cx + 2, cy + 2, cx + cos(m_ang) * 95 + 2, cy + sin(m_ang) * 95 + 2, shadow);
+          it.line(cx, cy, cx + cos(m_ang) * 95, cy + sin(m_ang) * 95, Color::BLACK);
+          it.line(cx + 1, cy + 1, cx + cos(m_ang) * 95 + 1, cy + sin(m_ang) * 95 + 1, Color::BLACK);
+
+          // 7. DRAW SECOND HAND (Red Ticking)
+          // Restoration: Only updates once per second based on time_now.second
+          it.line(cx + 1, cy + 1, cx + cos(s_ang) * 105 + 1, cy + sin(s_ang) * 105 + 1, shadow);
+          it.line(cx, cy, cx + cos(s_ang) * 105, cy + sin(s_ang) * 105, Color(255, 0, 0));
+
+          // 8. CENTER PIN
+          it.filled_circle(cx + 1, cy + 1, 5, shadow);
+          it.filled_circle(cx, cy, 5, Color::BLACK);
+          
+          // 9. DATE COMPLICATION
+          it.strftime(120, 185, id(googlesans_18), Color::WHITE, TextAlign::CENTER, "%a %d", time_now);
+        }
+      }
+
+      // -----------------------------------------------------------------
+      // MODE 1: DIGITAL DASHBOARD + BOLD PROGRESS RING (4px Thick)
+      // -----------------------------------------------------------------
+      else if (id(display_mode) == 1) {
+        
+        const int cx = 120;
+        const int cy = 120;
+        const int outer_radius = 115; // Keeps it just inside the bezel
+
+        // 1. PROGRESS CALCULATION
+        float progress = time_now.second / 60.0;
+        int end_deg = (int)(progress * 360);
+
+        // 2. DRAW THE BOLD PROGRESS RING
+        for (int i = 0; i < 360; i += 2) {
+          float angle1 = (i + 270) * M_PI / 180.0;
+          float angle2 = (i + 2 + 270) * M_PI / 180.0;
+          
+          Color arc_color = (i < end_deg) ? id(ha_green) : Color(40, 40, 40);
+
+          // Draw 4 concentric lines to create a 4px thick band
+          for (int width = 0; width < 4; width++) {
+            it.line(
+              cx + cos(angle1) * (outer_radius - width), 
+              cy + sin(angle1) * (outer_radius - width),
+              cx + cos(angle2) * (outer_radius - width), 
+              cy + sin(angle2) * (outer_radius - width),
+              arc_color
+            );
+          }
+        }
+
+        // 3. PRIMARY CLOCK: Large Digital Display
+        if (time_now.is_valid()) {
+          it.strftime(cx, 100, id(googlesans_58), Color::BLACK, TextAlign::CENTER, "%H:%M", time_now);
+        }
+
+        // 4. TEMPERATURE METRICS (Centered lower)
+        if (id(inside_temperature).has_state()) {
+          it.printf(80, 160, id(googlesans_28), Color::WHITE, TextAlign::CENTER, "%.1f°", id(inside_temperature).state);
+          it.print(80, 185, id(icon_font2), id(ha_green), TextAlign::CENTER, "\U000F0826");
+        }
+
+        if (id(outdoor_temperature).has_state()) {
+          it.printf(170, 160, id(googlesans_28), Color::WHITE, TextAlign::CENTER, "%.1f°", id(outdoor_temperature).state);
+          it.print(165, 185, id(icon_font2), id(ha_yellow), TextAlign::CENTER, "\U000F0599");
+        }
+      }
+
+      // -----------------------------------------------------------------
+      // MODE 2: INTERACTIVE LIGHT CONTROL
+      // A large, touch-friendly button for the Corner Lamp.
+      // -----------------------------------------------------------------
+      else if (id(display_mode) == 2) {
+
+        // 1. STATE DETECTION
+        // Queries the Home Assistant 'light' entity state.
+        bool is_on = id(corner_lamp).state;
+
+        // 2. AMBIENT BACKGROUND
+        // Fill the circle with Yellow (On) or Blue (Off). 
+        // This makes the state obvious at a glance.
+        it.fill(is_on ? id(ha_yellow) : id(ha_blue));
+
+        it.print(120, 45, id(googlesans_28), Color::BLACK, TextAlign::CENTER, "Corner Lamp");
+
+        // 3. CENTRAL BUTTON DESIGN
+        // The button changes from Black to Green when active.
+        Color btn_color = is_on ? id(ha_green) : Color::BLACK;
+        
+        // Main button body
+        it.filled_circle(120, 120, 50, btn_color);
+        // White border helps the button "pop" against the background.
+        it.circle(120, 120, 50, Color::WHITE);
+
+        // 4. LAMP ICON (mdi-desk-lamp)
+        it.print(120, 120, id(icon_font2), Color::WHITE, TextAlign::CENTER, "\U000F095F");
+
+        // 5. STATUS TEXT
+        // Placed at Y=195 to stay within the safe viewable area of the round glass.
+        it.print(120, 195, id(googlesans_18), Color::BLACK, TextAlign::CENTER,
+                is_on ? "Status: ON" : "OFF");
+      }
+
+      // -----------------------------------------------------------------
+      // MODE 3: ANIMATED EYES (SCREENSAVER)
+      // Creates a wandering "Living" character to prevent static image wear.
+      // -----------------------------------------------------------------
+      else if (id(display_mode) == 3) {
+
+        // 1. BLACK BACKGROUND
+        // Best for screensavers as it reduces light bleed and keeps focus on the character.
+        it.fill(Color::BLACK);
+
+        // 2. TIMING FOR Gaze
+        float t = millis() / 700.0f;
+        int eye_y = 100;
+        int left_x  = 75;
+        int right_x = 165;
+
+        // 3. WANDERING EFFECT
+        // Uses sine wave to shift the X-position left and right over time.
+        int eye_offset = sin(t) * 6;
+
+        // 4. BLINK LOGIC
+        // fmod(millis(), 4000) creates a 4-second loop.
+        // If the current time in that loop is less than 180ms, 'blink' is true.
+        bool blink = fmod(millis(), 4000) < 180;
+
+        Color eye_color = Color(255, 60, 60); // Red eyes
+
+        if (!blink) {
+          // 5. DRAW EYE SLITS (Procedural Ellipses)
+          // We stack horizontal lines of varying widths to create a rounded eye shape.
+          for (int i = -3; i <= 3; i++) {
+            int width = 18 - abs(i) * 2;
+            
+            // Left Eye
+            it.line(left_x  + eye_offset - width, eye_y + i,
+                    left_x  + eye_offset + width, eye_y + i, eye_color);
+
+            // Right Eye
+            it.line(right_x + eye_offset - width, eye_y + i,
+                    right_x + eye_offset + width, eye_y + i, eye_color);
+          }
+        } else {
+          // 6. BLINK STATE
+          // Simply draws a single flat horizontal line to represent closed eyes.
+          it.line(left_x  - 18, eye_y, left_x  + 18, eye_y, eye_color);
+          it.line(right_x - 18, eye_y, right_x + 18, eye_y, eye_color);
+        }
+
+        // 7. CUTE MOUTH (mdi-wave icon)
+        // Uses your Material Design Icon font to add extra character.
+        it.print(120, 160, id(icon_font2), eye_color, TextAlign::CENTER, "\U000F0F2E");
+      }
+
+      // -------------- Display Mode 4: 4-Way Control Grid -------------- //
+      else if (id(display_mode) == 4) {
+        it.fill(Color::BLACK);
+        
+        // Helper to draw 4 quadrants
+        // Top Left: Corner Lamp
+        it.filled_rectangle(5, 5, 112, 112, id(corner_lamp).state ? id(ha_green) : id(ha_blue));
+        it.print(70, 50, id(icon_font2), Color::WHITE, TextAlign::CENTER, "\U000F095F"); // Lamp
+        it.print(70, 85, id(googlesans_18), Color::WHITE, TextAlign::CENTER, "Lamp");
+
+        // Top Right: Fan
+        it.filled_rectangle(122, 5, 113, 112, id(fan).state ? id(ha_green) : id(ha_orange));
+        it.print(170, 50, id(icon_font2), Color::WHITE, TextAlign::CENTER, "\U000F0210"); // Fan Icon
+        it.print(170, 85, id(googlesans_18), Color::WHITE, TextAlign::CENTER, "Fan");
+
+        // Bottom Left: Main Light
+        it.filled_rectangle(5, 122, 112, 113, id(main_light).state ? id(ha_green) : id(ha_purple));
+        it.print(70, 150, id(icon_font2), Color::WHITE, TextAlign::CENTER, "\U000F0335"); // Light Icon
+        it.print(70, 185, id(googlesans_18), Color::WHITE, TextAlign::CENTER, "Main");
+
+        // Bottom Right: kitchen
+        it.filled_rectangle(122, 122, 113, 113, id(kitchen).state ? id(ha_green) : id(ha_red));
+        it.print(170, 150, id(icon_font2), Color::WHITE, TextAlign::CENTER, "\U000F0769"); // kitchen Icon
+        it.print(170, 185, id(googlesans_18), Color::WHITE, TextAlign::CENTER, "kitchen");
+
+        // Draw crosshair lines to separate buttons
+        it.line(120, 10, 120, 230, Color::WHITE);
+        it.line(10, 120, 230, 120, Color::WHITE);
+      }
+
+# =========================================================================
+# INTERACTION: TOUCHSCREEN LOGIC
+# =========================================================================
+# This section handles physical user input from the CST816 touch controller.
+# Coordinate System: (0,0) is top-left, (240,240) is bottom-right.
+# =========================================================================
+touchscreen:
+  - platform: cst816
+    id: my_touch
+    display: my_display
+    i2c_id: bus_a
+    interrupt_pin: GPIO5
+    reset_pin: GPIO13
+    skip_probe: true
+    on_touch:
+      - lambda: |-
+          // Capture the current system uptime in milliseconds
+          uint32_t now = millis();
+
+          // -------------------------------------------------------------
+          // 1. WAKE UP LOGIC (Exit Screensaver)
+          // -------------------------------------------------------------
+          // If the display is currently in Mode 3 (Animated Eyes/Screensaver),
+          // the first touch will simply return the user to their last active screen.
+          if (id(display_mode) == 3) {
+            // Restore backlight to 100% (1.0) on first touch
+            auto call = id(back_light).make_call();
+            call.set_brightness(1.0);
+            call.perform();
+
+            id(display_mode) = id(pre_screensaver_mode);
+            id(last_touch_time) = now; 
+            id(my_display).update();
+            return;
+            id(display_mode) = id(pre_screensaver_mode); // Restore previous state
+            id(last_touch_time) = now;                   // Prevent immediate re-entry
+            id(my_display).update();                     // Force immediate visual refresh
+            return;                                      // 'return' stops further logic execution
+          }
+
+          // Update the global timer to keep the screen awake for another 60 seconds
+          id(last_touch_time) = now; 
+
+          // -------------------------------------------------------------
+          // 2. CIRCULAR BUTTON LOGIC (Mode 2: Single Lamp Control)
+          // -------------------------------------------------------------
+          // Uses the Pythagorean Theorem (a² + b² = c²) to detect if a touch 
+          // happened inside a circle centered at (120, 120) with radius 50.
+          if (id(display_mode) == 2) {
+            int dx = touch.x - 120; // Horizontal distance from center
+            int dy = touch.y - 120; // Vertical distance from center
+            
+            // If distance squared is <= radius squared (50*50 = 2500), touch is inside circle
+            if ((dx*dx + dy*dy) <= 2500) { 
+              id(corner_lamp).toggle(); // Trigger Home Assistant switch toggle
+              id(my_display).update();  // Refresh display to show new "ON/OFF" color
+              return;                   // Consume the touch event so we don't switch screens
+            }
+          }
+
+          // -------------------------------------------------------------
+          // 3. QUADRANT GRID LOGIC (Mode 4: 4-Way Control)
+          // -------------------------------------------------------------
+          // Divides the 240x240 screen into four 120x120 touch zones.
+          if (id(display_mode) == 4) {
+            if (touch.y < 120) {
+              // TOP HALF of the screen
+              if (touch.x < 120) {
+                id(corner_lamp).toggle(); // Top-Left quadrant
+              } else {
+                id(fan).toggle();         // Top-Right quadrant
+              }
+            } else {
+              // BOTTOM HALF of the screen
+              if (touch.x < 120) {
+                id(main_light).toggle();  // Bottom-Left quadrant
+              } else {
+                id(kitchen).toggle();     // Bottom-Right quadrant
+              }
+            }
+            id(my_display).update();      // Refresh grid visuals (colors change based on state)
+            return;                       // Consume touch event
+          }
+
+          // -------------------------------------------------------------
+          // 4. SCREEN NAVIGATION (Default Behavior)
+          // -------------------------------------------------------------
+          // If the touch was not handled by a specific button above, 
+          // cycle to the next available display mode.
+          // % 5 keeps the value between 0 and 4.
+          id(display_mode) = (id(display_mode) + 1) % 5;
+
+          // Skip mode 3 (Screensaver) during manual cycling so users don't 
+          // accidentally "navigate" into the eyes; it should only appear when idle.
+          if (id(display_mode) == 3) {
+            id(display_mode) = 4;
+          }
+          
+          id(my_display).update(); // Redraw the screen for the new mode
+
+
